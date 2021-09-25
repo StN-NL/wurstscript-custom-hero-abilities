@@ -50,8 +50,8 @@ public class CustomHeroAbility
                 players[jj].setAbilityAvailable(slotId[ii], false)
 
     function add(unit u, int slot)
-        u   ..addAbility(this.addId[slot])
-            ..hideAbility(this.addId[slot], true)
+        u   ..addAbility(this.addId[slot - 1])
+            ..hideAbility(this.addId[slot - 1], true)
 
         if not listening
             addListener()

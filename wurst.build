@@ -1,8 +1,8 @@
 ---
-projectName: a
+projectName: CustomHeroAbilities
 dependencies:
 - https://github.com/wurstscript/wurstStdlib2
 buildMapData:
-  name: MyMapName
-  fileName: MyMapFile
+  name: CustomHeroAbilities
+  fileName: CustomHeroAbilities
   author: Stijn

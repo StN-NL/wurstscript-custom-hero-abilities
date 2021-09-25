@@ -5,4 +5,4 @@ dependencies:
 buildMapData:
   name: CustomHeroAbilities
   fileName: CustomHeroAbilities
-  author: Stijn
+  author: stn

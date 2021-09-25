@@ -1,0 +1,35 @@
+package Setup
+import ClosureEvents
+import UnitIds
+
+import CustomHeroAbility
+
+let HERO_ID = compiletime(HERO_ID_GEN.next())
+
+let customWindWalk = compiletime(new CustomHeroAbility(AbilityIds.windWalk))
+let customMirrorImage = compiletime(new CustomHeroAbility(AbilityIds.mirrorImage))
+let customCriticalStrike = compiletime(new CustomHeroAbility(AbilityIds.criticalStrike1))
+
+init
+	let HERO = createUnit(players[0], HERO_ID, vec2(0,0), angle(0))
+		..setLevel(10, false)
+
+	print("Available commands: -add <slot> <ability>\nAvailable slots: 1-4\nAvailable abilities: ww, mi, cs\n\nExample: -add 1 ww")
+
+	EventListener.add(EVENT_PLAYER_CHAT_FILTER) ->
+		let message = EventData.getChatMessage()
+		for ii = 0 to CustomHeroAbility.slots - 1
+			if message.contains("-add " + (ii + 1).toString())
+				if message.contains("ww")
+					print("Wind Walk added to slot " + (ii + 1).toString())
+					customWindWalk.add(HERO, ii)
+				else if message.contains("mi")
+					print("Mirror Image added to slot " + (ii + 1).toString())
+					customMirrorImage.add(HERO, ii)
+				else if message.contains("cs")
+					print("Critical Strike added to slot " + (ii + 1).toString())
+					customCriticalStrike.add(HERO, ii)
+
+@compiletime function gen()
+	new HeroDefinition(HERO_ID, UnitIds.blademaster)
+		..setHeroAbilities(commaList(CustomHeroAbility.slotId[0], CustomHeroAbility.slotId[1], CustomHeroAbility.slotId[2], CustomHeroAbility.slotId[3]))

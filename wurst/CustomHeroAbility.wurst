@@ -1,0 +1,77 @@
+package CustomHeroAbility
+import public ChannelAbilityPreset
+import ClosureEvents
+
+public class CustomHeroAbility
+    static constant int array slotId = [
+        compiletime(ABIL_ID_GEN.next()),
+        compiletime(ABIL_ID_GEN.next()),
+        compiletime(ABIL_ID_GEN.next()),
+        compiletime(ABIL_ID_GEN.next())]
+    static constant slots = 4
+    static constant levels = 3
+    static constant hotkey = ["Q", "W", "E", "R"]
+    static constant buttonPositionX = [0, 1, 2, 3]
+    static constant buttonPositionY = [2, 2, 2, 2]
+    static constant buttonPositionResearchX = [0, 1, 2, 3]
+    static constant buttonPositionResearchY = [0, 0, 0, 0]
+
+    int array[slots] addId
+    int array[slots] learnId
+    int array[slots] abilId
+
+    bool listening = false
+
+    construct(int abilityId)
+        for ii = 0 to slots - 1
+            addId[ii] = ABIL_ID_GEN.next()
+            learnId[ii] = ABIL_ID_GEN.next()
+            abilId[ii] = ABIL_ID_GEN.next()
+
+            new AbilityDefinition(learnId[ii], abilityId, levels)
+                ..presetHotkey(hotkey[ii])
+                ..presetButtonPosNormal(buttonPositionX[ii], buttonPositionY[ii])
+                ..presetButtonPosResearch(buttonPositionResearchX[ii], buttonPositionResearchY[ii])
+        
+            new AbilityDefinition(abilId[ii], abilityId, levels)
+                ..setHeroAbility(false)
+                ..presetHotkey(hotkey[ii])
+                ..presetButtonPosNormal(buttonPositionX[ii], buttonPositionY[ii])
+                ..presetButtonPosResearch(buttonPositionResearchX[ii], buttonPositionResearchY[ii])
+
+            new AbilityDefinitionTinkererEngineeringUpgrade(addId[ii])
+                ..setAbilityUpgrade(1, commaList(slotId[ii], learnId[ii]))
+                ..setMoveSpeedBonus(1, 0)
+                ..setDamageBonus(1, 0)
+
+    static function setup()
+        for ii = 0 to slots - 1
+            for jj = 0 to bj_MAX_PLAYER_SLOTS - 1
+                players[jj].setAbilityAvailable(slotId[ii], false)
+
+    function add(unit u, int slot)
+        u   ..addAbility(this.addId[slot])
+            ..hideAbility(this.addId[slot], true)
+
+        if not listening
+            addListener()
+
+    function addListener()
+        listening = true
+        EventListener.add(EVENT_PLAYER_HERO_SKILL) ->
+            for ii = 0 to slots - 1
+                if EventData.getLearnedSkill() == learnId[ii]
+                    if not EventData.getLearningUnit().hasAbility(abilId[ii])
+                        EventData.getLearningUnit()
+                            ..addAbility(abilId[ii])
+                            ..setAbilityLevel(abilId[ii], EventData.getLearnedSkillLevel())
+                            ..hideAbility(learnId[ii], true)
+                    else
+                        EventData.getLearningUnit().incAbilityLevel(abilId[ii])
+
+    @compiletime private static function generateDummyAbility()
+        for ii = 0 to slots - 1
+            new ChannelAbilityPreset(slotId[ii], levels, true)
+
+init
+    CustomHeroAbility.setup()

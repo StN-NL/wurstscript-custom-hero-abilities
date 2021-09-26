@@ -13,9 +13,6 @@ let customShockWave = compiletime(new CustomHeroAbility(AbilityIds.shockwave2))
 let customWarStomp = compiletime(new CustomHeroAbility(AbilityIds.warStomp1))
 let customEnduranceAura = compiletime(new CustomHeroAbility(AbilityIds.enduranceAura1))
 
-function add(CustomHeroAbility customHeroAbility, unit hero, int slot)
-	customHeroAbility.add(hero, slot)
-
 init
 	let HERO = createUnit(players[0], HERO_ID, vec2(0,0), angle(0))
 		..setLevel(10, false)
@@ -27,17 +24,17 @@ init
 		for ii = 1 to CustomHeroAbility.slots
 			if message.contains("-add ") and message.contains(ii.toString())
 				if message.contains("ww")
-					add(customWindWalk, HERO, ii)
+					customWindWalk.add(HERO, ii)
 				else if message.contains("mi")
-					add(customMirrorImage, HERO, ii)
+					customMirrorImage.add(HERO, ii)
 				else if message.contains("cs")
-					add(customCriticalStrike, HERO, ii)
+					customCriticalStrike.add(HERO, ii)
 				else if message.contains("sw")
-					add(customShockWave, HERO, ii)
+					customShockWave.add(HERO, ii)
 				else if message.contains("ws")
-					add(customWarStomp, HERO, ii)
+					customWarStomp.add(HERO, ii)
 				else if message.contains("ea")
-					add(customEnduranceAura, HERO, ii)
+					customEnduranceAura.add(HERO, ii)
 
 @compiletime function gen()
 	new HeroDefinition(HERO_ID, UnitIds.archimonde)

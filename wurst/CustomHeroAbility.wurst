@@ -1,34 +1,90 @@
 package CustomHeroAbility
 import public ChannelAbilityPreset
 import ClosureEvents
+import LinkedList
 
+/**
+Custom hero abilities can be added to heroes in-game, for example,
+through shops that sell abilities (a popular approach in battle.net
+custom games).
+
+To enable custom hero abilities for a hero, use:
+    ..setHeroAbilities(CustomHeroAbility.enable)
+
+To generate a windwalk ability that can be added during game, use:
+    let customWindWalk = compiletime(new CustomHeroAbility(AbilityIds.windWalk))
+
+To add the newly created windwalk ability to a hero during the game, use:
+    customWindWalk.add(hero, slot)
+*/
 public class CustomHeroAbility
-    static constant int array slotId = [
-        compiletime(ABIL_ID_GEN.next()),
-        compiletime(ABIL_ID_GEN.next()),
-        compiletime(ABIL_ID_GEN.next()),
-        compiletime(ABIL_ID_GEN.next())]
-    static constant slots = 4
-    static constant levels = 3
-    static constant hotkey = ["Q", "W", "E", "R"]
-    static constant buttonPositionX = [0, 1, 2, 3]
-    static constant buttonPositionY = [2, 2, 2, 2]
-    static constant buttonPositionResearchX = [0, 1, 2, 3]
-    static constant buttonPositionResearchY = [0, 0, 0, 0]
 
-    int array[slots] addId
-    int array[slots] learnId
-    int array[slots] abilId
+    // Class variables
 
-    bool listening = false
+    /**
+    Use this to configure the general behaviour of the custom hero abilities.
+    */
+    @configurable static constant slots = 5
+    @configurable static constant limitLevels = 10
+    @configurable static constant hotkey = ["Q", "W", "E", "R", "D"]
+    @configurable static constant buttonPositionX = [0, 1, 2, 3, 2]
+    @configurable static constant buttonPositionY = [2, 2, 2, 2, 1]
+    @configurable static constant buttonPositionResearchX = [0, 1, 2, 3, 2]
+    @configurable static constant buttonPositionResearchY = [0, 0, 0, 0, 1]
 
+    protected static constant LinkedList<int> slotId = compiletime(initSlotId())
+
+    protected static function initSlotId() returns LinkedList<int>
+        let list = new LinkedList<int>
+        for ii = 0 to slots - 1
+            list.add(ABIL_ID_GEN.next())
+        
+        return list
+
+    /**
+    Used to enable custom hero abilities for the hero.
+
+    Example usage:
+        heroDefinition.setHeroAbilities(CustomHeroAbility.enable)
+    */
+    static constant string enable = commaList(slotId.copy())
+
+    // Instance variables
+
+    protected int array[slots] addId
+    protected int array[slots] learnId
+    protected int array[slots] abilId
+    protected int array[slots] maxLevel
+
+    protected bool listening = false
+    
+    /**
+    Create a new custom hero ability. Only an ability ID is required.
+
+    Example usage:
+        let customWindWalk = compiletime(new CustomHeroAbility(AbilityIds.windWalk))
+
+    Advanced usage:
+        compiletime(new CustomHeroAbility(int abilityId, int levels, int levelSkipRequirement)
+    */
     construct(int abilityId)
+        create(abilityId, 3, 1)
+
+    construct(int abilityId, int levels)
+        create(abilityId, levels, 1)
+        
+    construct(int abilityId, int levels, int levelSkipRequirement)
+        create(abilityId, levels, levelSkipRequirement)
+
+    protected function create(int abilityId, int levels, int levelSkipRequirement)
         for ii = 0 to slots - 1
             addId[ii] = ABIL_ID_GEN.next()
             learnId[ii] = ABIL_ID_GEN.next()
             abilId[ii] = ABIL_ID_GEN.next()
+            maxLevel[ii] = levels
 
             new AbilityDefinition(learnId[ii], abilityId, levels)
+                ..setLevelSkipRequirement(levelSkipRequirement)
                 ..presetHotkey(hotkey[ii])
                 ..presetButtonPosNormal(buttonPositionX[ii], buttonPositionY[ii])
                 ..presetButtonPosResearch(buttonPositionResearchX[ii], buttonPositionResearchY[ii])
@@ -40,23 +96,25 @@ public class CustomHeroAbility
                 ..presetButtonPosResearch(buttonPositionResearchX[ii], buttonPositionResearchY[ii])
 
             new AbilityDefinitionTinkererEngineeringUpgrade(addId[ii])
-                ..setAbilityUpgrade(1, commaList(slotId[ii], learnId[ii]))
+                ..setAbilityUpgrade(1, commaList(slotId.get(ii), learnId[ii]))
                 ..setMoveSpeedBonus(1, 0)
                 ..setDamageBonus(1, 0)
 
-    static function setup()
-        for ii = 0 to slots - 1
-            for jj = 0 to bj_MAX_PLAYER_SLOTS - 1
-                players[jj].setAbilityAvailable(slotId[ii], false)
-
+    /**
+    Use this method to add existing custom hero abilities to heroes.
+    
+    Example usage:
+        customWindWalk.add(hero, slot)
+    */
     function add(unit u, int slot)
-        u   ..addAbility(this.addId[slot - 1])
-            ..hideAbility(this.addId[slot - 1], true)
+        if not compiletime
+            u   ..addAbility(addId[slot-1])
+                ..hideAbility(addId[slot-1], true)
 
-        if not listening
-            addListener()
+            if not listening
+                addListener()
 
-    function addListener()
+    protected function addListener()
         listening = true
         EventListener.add(EVENT_PLAYER_HERO_SKILL) ->
             for ii = 0 to slots - 1
@@ -68,10 +126,18 @@ public class CustomHeroAbility
                             ..hideAbility(learnId[ii], true)
                     else
                         EventData.getLearningUnit().incAbilityLevel(abilId[ii])
-
-    @compiletime private static function generateDummyAbility()
+                        
+                    if EventData.getLearnedSkillLevel() == maxLevel[ii]
+                        EventData.getLearningUnit().removeAbility(addId[ii])
+        
+    @compiletime protected static function gen()
         for ii = 0 to slots - 1
-            new ChannelAbilityPreset(slotId[ii], levels, true)
+            new ChannelAbilityPreset(slotId.get(ii), limitLevels, true)
+
+    protected static function setup()
+        for ii = 0 to slots - 1
+            for jj = 0 to bj_MAX_PLAYER_SLOTS - 1
+                players[jj].setAbilityAvailable(slotId.get(ii), false)
 
 init
     CustomHeroAbility.setup()

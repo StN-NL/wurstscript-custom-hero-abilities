@@ -14,14 +14,13 @@ let customWarStomp = compiletime(new CustomHeroAbility(AbilityIds.warStomp1))
 let customEnduranceAura = compiletime(new CustomHeroAbility(AbilityIds.enduranceAura1))
 
 init
-	let HERO = createUnit(players[0], HERO_ID, vec2(0,0), angle(0))
-		..setLevel(10, false)
+	let HERO = createUnit(players[0], HERO_ID, vec2(0, 0), angle(0))..setLevel(10, false)
 
-	print("Available commands: -add <ability> <slot>\nAvailable abilities: ww, mi, cs, sw, ws, ea\nAvailable slots: 1-4\n\nExample: -add ww 1")
+	print("Available commands: -add <ability> <slot>\nAvailable abilities: ww, mi, cs, sw, ws, ea\nAvailable slots: 1-5\n\nExample: -add ww 1")
 
 	EventListener.add(EVENT_PLAYER_CHAT_FILTER) ->
 		let message = EventData.getChatMessage()
-		for ii = 1 to CustomHeroAbility.slots
+		for ii = 1 to 5
 			if message.contains("-add ") and message.contains(ii.toString())
 				if message.contains("ww")
 					customWindWalk.add(HERO, ii)
@@ -37,5 +36,4 @@ init
 					customEnduranceAura.add(HERO, ii)
 
 @compiletime function gen()
-	new HeroDefinition(HERO_ID, UnitIds.archimonde)
-		..setHeroAbilities(commaList(CustomHeroAbility.slotId[0], CustomHeroAbility.slotId[1], CustomHeroAbility.slotId[2], CustomHeroAbility.slotId[3]))
+	new HeroDefinition(HERO_ID, UnitIds.archimonde).setHeroAbilities(CustomHeroAbility.enable)

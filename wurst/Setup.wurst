@@ -1,39 +1,49 @@
 package Setup
 import ClosureEvents
+import HashMap
 import UnitIds
 
 import CustomHeroAbility
 
 let HERO_ID = compiletime(HERO_ID_GEN.next())
+	
+function onLearnWindWalk()
+	print(EventData.getTriggerUnit().getName() + " learned windwalk")
 
-let customWindWalk = compiletime(new CustomHeroAbility(AbilityIds.windWalk))
-let customMirrorImage = compiletime(new CustomHeroAbility(AbilityIds.mirrorImage))
-let customCriticalStrike = compiletime(new CustomHeroAbility(AbilityIds.criticalStrike1))
-let customShockWave = compiletime(new CustomHeroAbility(AbilityIds.shockwave2))
-let customWarStomp = compiletime(new CustomHeroAbility(AbilityIds.warStomp1))
-let customEnduranceAura = compiletime(new CustomHeroAbility(AbilityIds.enduranceAura1))
+function onCastWindWalk()
+	print(EventData.getTriggerUnit().getName() + " casted windwalk")
+
+let map = new IterableMap<string, CustomHeroAbility>
+	..put("ww", compiletime(new CustomHeroAbility(AbilityIds.windWalk)))
+	..put("mi", compiletime(new CustomHeroAbility(AbilityIds.mirrorImage)))
+	..put("cs", compiletime(new CustomHeroAbility(AbilityIds.criticalStrike1)))
+	..put("sw", compiletime(new CustomHeroAbility(AbilityIds.shockwave2)))
+	..put("ws", compiletime(new CustomHeroAbility(AbilityIds.warStomp1)))
+	..put("ea", compiletime(new CustomHeroAbility(AbilityIds.enduranceAura1)))
 
 init
-	let HERO = createUnit(players[0], HERO_ID, vec2(0, 0), angle(0))..setLevel(10, false)
+	map.get("ww")
+		..addTrigger(EVENT_PLAYER_HERO_SKILL, () -> onLearnWindWalk())
+		..addTrigger(EVENT_PLAYER_UNIT_SPELL_EFFECT, () -> onCastWindWalk())
 
-	print("Available commands: -add <ability> <slot>\nAvailable abilities: ww, mi, cs, sw, ws, ea\nAvailable slots: 1-5\n\nExample: -add ww 1")
+	let hero = createUnit(players[0], HERO_ID, vec2(0, 0), angle(0))..setLevel(10, false)
+
+	print("Available commands: -add | -rm | -ul <ability> <slot>\nAvailable abilities: ww, mi, cs, sw, ws, ea\nAvailable slots: 1-5\n\nExample: -add ww 1")
 
 	EventListener.add(EVENT_PLAYER_CHAT_FILTER) ->
 		let message = EventData.getChatMessage()
 		for ii = 1 to 5
-			if message.contains("-add ") and message.contains(ii.toString())
-				if message.contains("ww")
-					customWindWalk.add(HERO, ii)
-				else if message.contains("mi")
-					customMirrorImage.add(HERO, ii)
-				else if message.contains("cs")
-					customCriticalStrike.add(HERO, ii)
-				else if message.contains("sw")
-					customShockWave.add(HERO, ii)
-				else if message.contains("ws")
-					customWarStomp.add(HERO, ii)
-				else if message.contains("ea")
-					customEnduranceAura.add(HERO, ii)
+			if message.contains(ii.toString())
+				if message.contains("-add ")
+					map.forEach() (string key, CustomHeroAbility value) ->
+						if message.contains(key)
+							value.add(hero, ii)
+				
+				if message.contains("-rm ")
+					CustomHeroAbility.remove(hero, ii, true)
+				
+				if message.contains("-ul ")
+					CustomHeroAbility.unlearn(hero, ii, true)
 
 @compiletime function gen()
 	new HeroDefinition(HERO_ID, UnitIds.archimonde).setHeroAbilities(CustomHeroAbility.enable)
